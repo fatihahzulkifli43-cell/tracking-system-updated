@@ -1,0 +1,2547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>Money Tracker</title>
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+     ============================================================ */
+  :root{
+    --bg: #0f1420;
+    --bg-elevated: #171e2e;
+    --card: #ffffff;
+    --card-muted: #f4f6fb;
+    --text-main: #101521;
+    --text-soft: #5b6472;
+    --text-inverse: #f3f5f9;
+    --text-inverse-soft: #9aa4b8;
+
+    --blue: #3b82f6;       /* RHB */
+    --blue-soft: #eaf1ff;
+    --teal: #14b8a6;       /* Maybank */
+    --teal-soft: #e7faf6;
+    --green: #16a34a;      /* positive */
+    --green-soft: #e9f9ee;
+    --red: #e2482f;        /* warning / negative */
+    --red-soft: #fdeceb;
+    --amber: #f59e0b;      /* zero / caution */
+    --amber-soft: #fef6e6;
+    --orange: #ea580c;     /* ShopeePay Money+ */
+    --orange-soft: #fff1e8;
+
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --shadow: 0 6px 20px rgba(15, 20, 32, 0.08);
+    --shadow-dark: 0 10px 30px rgba(0,0,0,0.35);
+
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body{ margin:0; padding:0; overflow-x:hidden; width:100%; }
+  body{
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text-inverse);
+    padding-bottom: 48px;
+    min-height: 100vh;
+  }
+
+  /* ============================================================
+     LAYOUT SHELL
+     ============================================================ */
+  .app{
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 18px 16px 8px;
+  }
+
+  header.top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 16px;
+  }
+  header.top h1{
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin:0;
+  }
+  header.top .subtitle{
+    font-size: 12px;
+    color: var(--text-inverse-soft);
+    margin-top: 2px;
+  }
+  .save-indicator{
+    font-size: 12px;
+    color: var(--green);
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity .25s ease;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    white-space:nowrap;
+  }
+  .save-indicator.show{ opacity: 1; }
+
+  /* ============================================================
+     MONTH TABS
+     ============================================================ */
+  .month-tabs{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding: 4px 2px 14px;
+    scrollbar-width: none;
+  }
+  .month-tabs::-webkit-scrollbar{ display:none; }
+  .month-tab{
+    flex: 0 0 auto;
+    background: var(--bg-elevated);
+    color: var(--text-inverse-soft);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 9px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease, color .15s ease, transform .1s ease;
+  }
+  .month-tab:active{ transform: scale(0.96); }
+  .month-tab.active{
+    background: var(--teal);
+    color: #06231d;
+    border-color: transparent;
+  }
+
+  /* ============================================================
+     CARDS
+     ============================================================ */
+  .card{
+    background: var(--card);
+    color: var(--text-main);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card h2{
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-soft);
+    margin: 0 0 12px;
+    font-weight: 700;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .card p.hint{
+    font-size: 12.5px;
+    color: var(--text-soft);
+    margin: -4px 0 12px;
+    line-height:1.45;
+  }
+
+  /* ============================================================
+     SUMMARY CARD (top)
+     ============================================================ */
+  .summary-card{
+    background: linear-gradient(160deg, #1a2236, #10151f);
+    color: var(--text-inverse);
+    border-radius: var(--radius-lg);
+    padding: 20px 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-dark);
+  }
+  .summary-card h2{
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 14px;
+    color: var(--text-inverse);
+  }
+  .summary-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .summary-item{
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+  .summary-item .label{
+    font-size: 11px;
+    color: var(--text-inverse-soft);
+    margin-bottom: 4px;
+    display:flex; align-items:center; gap:4px;
+  }
+  .summary-item .value{
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .summary-item.wide{ grid-column: 1 / -1; }
+  .summary-item.positive .value{ color: var(--green); }
+  .summary-item.warning .value{ color: var(--red); }
+
+  /* ============================================================
+     INCOME INPUT
+     ============================================================ */
+  .money-input-wrap{
+    display:flex;
+    align-items:center;
+    background: var(--card-muted);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    border: 1.5px solid transparent;
+    transition: border-color .15s ease;
+  }
+  .money-input-wrap:focus-within{ border-color: var(--teal); }
+  .money-input-wrap .prefix{
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-soft);
+    margin-right: 8px;
+  }
+  .money-input-wrap input{
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-main);
+    width: 100%;
+    font-family: var(--font);
+  }
+  .money-input-wrap input::placeholder{ color: #b7bfcc; font-weight: 600; }
+
+  /* ============================================================
+     EXPENSES
+     ============================================================ */
+  .expense-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eef0f4;
+  }
+  .expense-row:last-of-type{ border-bottom:none; }
+  .expense-row input[type="text"]{
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: var(--card-muted);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text-main);
+    font-family: var(--font);
+  }
+  .expense-row .amount-wrap,
+  .withdrawal-row .amount-wrap{
+    flex: 0 0 auto;
+    display:flex;
+    align-items:center;
+    background: var(--card-muted);
+    border-radius: var(--radius-sm);
+    padding: 0 10px;
+    width: 118px;
+  }
+  .expense-row .amount-wrap span,
+  .withdrawal-row .amount-wrap span{
+    font-size: 13px;
+    color: var(--text-soft);
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .expense-row .amount-wrap input[type="number"],
+  .withdrawal-row .amount-wrap input[type="number"]{
+    border:none;
+    background:transparent;
+    outline:none;
+    width: 100%;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text-main);
+    padding: 10px 0;
+    font-family: var(--font);
+    -moz-appearance: textfield;
+  }
+  .expense-row .amount-wrap input[type=number]::-webkit-outer-spin-button,
+  .expense-row .amount-wrap input[type=number]::-webkit-inner-spin-button,
+  .withdrawal-row .amount-wrap input[type=number]::-webkit-outer-spin-button,
+  .withdrawal-row .amount-wrap input[type=number]::-webkit-inner-spin-button{
+    -webkit-appearance: none; margin:0;
+  }
+  .expense-row .del-btn,
+  .withdrawal-row .del-btn{
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: none;
+    background: var(--red-soft);
+    color: var(--red);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: transform .1s ease;
+  }
+  .expense-row .del-btn:active,
+  .withdrawal-row .del-btn:active{ transform: scale(0.9); }
+
+  .expense-row .paid-checkbox{
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    border: 1.5px solid #c9d0dc;
+    background: var(--card-muted);
+    cursor: pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 14px;
+    color: #fff;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .expense-row .paid-checkbox:active{ transform: scale(0.9); }
+  .expense-row .paid-checkbox.checked{
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .expense-row.is-paid input[type="text"]{
+    color: var(--text-soft);
+    text-decoration: line-through;
+    text-decoration-color: #c9d0dc;
+  }
+  .expense-row.is-paid .amount-wrap input[type="number"]{
+    color: var(--text-soft);
+  }
+  .expense-paid-note{
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* ============================================================
+     RHB WITHDRAWAL ROWS
+     ============================================================ */
+  .withdrawal-row{
+    padding: 10px 0;
+    border-bottom: 1px solid #eef0f4;
+  }
+  .withdrawal-row:last-of-type{ border-bottom:none; }
+  .withdrawal-row .wd-top{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-bottom: 8px;
+  }
+  .withdrawal-row .wd-top input[type="text"]{
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: var(--card-muted);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text-main);
+    font-family: var(--font);
+  }
+  .withdrawal-row .wd-bottom{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .pocket-select{
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: var(--card-muted);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-main);
+    font-family: var(--font);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .pocket-select.pocket-expenses{ color: var(--blue); }
+
+  .pocket-select.dir-in{ color: var(--green); }
+  .pocket-select.dir-out{ color: var(--red); }
+
+  .empty-state{
+    text-align:center;
+    padding: 18px 8px;
+    color: var(--text-soft);
+    font-size: 13.5px;
+  }
+
+  .add-expense-btn{
+    width: 100%;
+    margin-top: 12px;
+    padding: 13px;
+    border-radius: var(--radius-md);
+    border: 1.5px dashed #c9d0dc;
+    background: var(--card-muted);
+    color: var(--text-main);
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s ease, transform .1s ease;
+  }
+  .add-expense-btn:active{ transform: scale(0.98); }
+
+  .expense-total-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 2px solid #eef0f4;
+  }
+  .expense-total-row .label{ font-size: 14px; font-weight: 700; color: var(--text-main); }
+  .expense-total-row .value{ font-size: 18px; font-weight: 800; color: var(--text-main); }
+
+  .reserve-banner{
+    margin-top: 14px;
+    background: var(--red-soft);
+    color: var(--red);
+    border-radius: var(--radius-md);
+    padding: 13px 14px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align:center;
+  }
+
+  /* ============================================================
+     RHB / MAYBANK SECTIONS
+     ============================================================ */
+  .card.rhb{ border-left: 5px solid var(--blue); }
+  .card.maybank{ border-left: 5px solid var(--teal); }
+  .card.maybank .row-line.total .value{ color: var(--teal); }
+  .card.asnb{ border-left: 5px solid #7c3aed; }
+  .card.tng{ border-left: 5px solid #0891b2; }
+  .card.shopeepay{ border-left: 5px solid var(--orange); }
+  .card.shopeepay .buffer-input-wrap:focus-within{ border-color: var(--orange); }
+  .maybank-divider{
+    height: 1px;
+    background: #eef0f4;
+    margin: 18px 0 0;
+  }
+
+  .row-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding: 9px 0;
+  }
+  .row-line .label{ font-size: 14px; color: var(--text-soft); font-weight: 600; }
+  .row-line .value{ font-size: 15px; font-weight: 700; color: var(--text-main); }
+  .row-line.total{
+    border-top: 2px solid #eef0f4;
+    margin-top: 6px;
+    padding-top: 12px;
+  }
+  .row-line.total .label{ color: var(--text-main); font-weight:700; }
+  .row-line.total .value{ font-size: 18px; color: var(--blue); }
+
+  .buffer-input-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    padding: 6px 0 4px;
+  }
+  .buffer-input-row .label{ font-size: 14px; color: var(--text-soft); font-weight: 600; }
+  .buffer-input-wrap{
+    display:flex;
+    align-items:center;
+    background: var(--card-muted);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    width: 140px;
+    border: 1.5px solid transparent;
+    transition: border-color .15s ease;
+  }
+  .buffer-input-wrap:focus-within{ border-color: var(--blue); }
+  .buffer-input-wrap span{ font-size: 13px; color: var(--text-soft); font-weight:700; margin-right:4px; }
+  .buffer-input-wrap input{
+    border:none; background:transparent; outline:none;
+    width:100%; text-align:right;
+    font-size: 15px; font-weight:700; color: var(--text-main);
+    font-family: var(--font);
+  }
+
+  .result-block{
+    text-align:center;
+    padding: 18px 10px 6px;
+  }
+  .result-block .result-label{
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 6px;
+  }
+  .result-block .result-value{
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .result-block .result-value.positive{ color: var(--green); }
+  .result-block .result-value.zero{ color: var(--amber); }
+  .result-block .result-value.negative{ color: var(--red); }
+  .result-block .result-note{
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-soft);
+    line-height: 1.5;
+  }
+  .shortfall-banner{
+    margin-top: 14px;
+    background: var(--red-soft);
+    color: var(--red);
+    border-radius: var(--radius-md);
+    padding: 13px 14px;
+    text-align:center;
+  }
+  .shortfall-banner .big{ font-size: 20px; font-weight: 800; }
+  .shortfall-banner .small{ font-size: 12.5px; margin-top: 4px; font-weight:600; opacity:0.85; }
+
+  /* ============================================================
+     OVERALL SUMMARY (collapsible)
+     ============================================================ */
+  .overall-toggle{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:none;
+    border:none;
+    padding:0;
+    cursor:pointer;
+    color: var(--text-main);
+    font-family: var(--font);
+  }
+  .overall-toggle .chev{
+    transition: transform .2s ease;
+    font-size: 14px;
+    color: var(--text-soft);
+  }
+  .overall-toggle.open .chev{ transform: rotate(180deg); }
+  .overall-body{
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .25s ease;
+  }
+  .overall-body.open{ max-height: 600px; margin-top: 14px; }
+  .overall-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .overall-item{
+    background: var(--card-muted);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+  .overall-item .label{ font-size: 11.5px; color: var(--text-soft); font-weight:600; margin-bottom:3px; }
+  .overall-item .value{ font-size: 16px; font-weight: 800; color: var(--text-main); }
+  .overall-item.wide{ grid-column: 1/-1; }
+  .overall-item.accent .value{ color: var(--teal); }
+
+  /* ============================================================
+     TOTAL ACCOUNT BALANCES (final card)
+     ============================================================ */
+  .totals-card{ margin-top: 4px; }
+  .totals-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .totals-tile{
+    border-radius: var(--radius-md);
+    padding: 14px 14px 12px;
+  }
+  .totals-tile .label{ font-size: 12px; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 4px; }
+  .totals-tile .value{ font-size: 24px; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; }
+  .totals-tile .formula{ font-size: 11px; margin-top: 4px; line-height: 1.4; opacity: 0.8; }
+  .totals-tile.all{ background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); }
+  .totals-tile.all .value{ color: var(--text-inverse); }
+  .totals-tile.available{ background: rgba(20,184,166,0.14); border: 1px solid rgba(20,184,166,0.35); }
+  .totals-tile.available .label, .totals-tile.available .value{ color: #5eead4; }
+  .acct-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 10px;
+    padding: 9px 0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .acct-row .acct-name{ font-size: 13.5px; font-weight: 700; display:flex; align-items:center; gap:6px; }
+  .acct-row .acct-dot{ width:9px; height:9px; border-radius:999px; flex:0 0 auto; }
+  .acct-row .acct-badge{
+    font-size: 10px; font-weight: 700; color: #5eead4;
+    background: rgba(20,184,166,0.14); border-radius: 999px; padding: 2px 6px;
+  }
+  .acct-row .acct-right{ text-align:right; }
+  .acct-row .acct-value{ font-size: 15px; font-weight: 700; }
+  .acct-row .acct-value.missing{ color: var(--amber); font-size: 13px; }
+  .acct-row .acct-src{ font-size: 10.5px; color: var(--text-inverse-soft); margin-top: 1px; }
+  .totals-warning{
+    margin-top: 12px;
+    background: rgba(245,158,11,0.12);
+    color: #fcd34d;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+  .totals-footnote{ font-size: 11.5px; color: var(--text-inverse-soft); margin-top: 10px; line-height: 1.5; }
+  @media (max-width: 480px){
+    .totals-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================
+     RESET SECTION
+     ============================================================ */
+  .reset-row{
+    display:flex;
+    gap:10px;
+    margin-top: 4px;
+  }
+  .reset-btn{
+    flex:1;
+    padding: 13px 10px;
+    border-radius: var(--radius-md);
+    border: none;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .1s ease, opacity .15s ease;
+  }
+  .reset-btn:active{ transform: scale(0.97); }
+  .reset-btn.month{ background: var(--amber-soft); color: #92620a; }
+  .reset-btn.all{ background: var(--red-soft); color: var(--red); }
+
+  /* ============================================================
+     MODAL (confirm dialogs)
+     ============================================================ */
+  .modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(8,10,16,0.6);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+    padding: 0;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    background: var(--card);
+    color: var(--text-main);
+    width: 100%;
+    max-width: 560px;
+    border-radius: 22px 22px 0 0;
+    padding: 22px 20px calc(22px + env(safe-area-inset-bottom));
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.3);
+    animation: slideUp .2s ease;
+  }
+  @keyframes slideUp{
+    from{ transform: translateY(30px); opacity:0; }
+    to{ transform: translateY(0); opacity:1; }
+  }
+  .modal-box h3{ margin: 0 0 8px; font-size: 17px; font-weight:800; }
+  .modal-box p{ margin: 0 0 20px; font-size: 14px; color: var(--text-soft); line-height:1.5; }
+  .modal-actions{ display:flex; gap:10px; }
+  .modal-actions button{
+    flex:1;
+    padding: 13px;
+    border-radius: var(--radius-md);
+    border: none;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .modal-actions .cancel{ background: var(--card-muted); color: var(--text-main); }
+  .modal-actions .confirm{ background: var(--red); color: #fff; }
+
+  /* ============================================================
+     NOTES / CATATAN
+     ============================================================ */
+  .notes-textarea{
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    border: 1.5px solid #e3e7ee;
+    background: var(--card-muted);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 16px; /* >=16px so iOS Safari doesn't auto-zoom on focus */
+    line-height: 1.5;
+    color: var(--text-main);
+    font-family: var(--font);
+    outline: none;
+    transition: border-color .15s ease;
+    -webkit-appearance: none;
+  }
+  .notes-textarea:focus{ border-color: var(--teal); }
+  .notes-textarea::placeholder{ color: #9aa4b8; }
+  .notes-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top: 8px;
+  }
+  .notes-meta .notes-count{
+    font-size: 11.5px;
+    color: var(--text-soft);
+  }
+  .notes-clear-btn{
+    border:none;
+    background:none;
+    color: var(--red);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 6px;
+  }
+  .notes-clear-btn:active{ opacity:0.6; }
+
+  footer.app-footer{
+    text-align:center;
+    font-size: 11.5px;
+    color: var(--text-inverse-soft);
+    margin-top: 6px;
+    padding: 0 20px;
+    line-height:1.6;
+  }
+
+  @media (min-width: 640px){
+    .app{ padding-top: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="top">
+    <div>
+      <h1>💸 Money Tracker</h1>
+      <div class="subtitle" id="monthSubtitle">September 2026</div>
+    </div>
+    <div class="save-indicator" id="saveIndicator">✓ Saved</div>
+  </header>
+
+  <!-- MONTH TABS -->
+  <div class="month-tabs" id="monthTabs"></div>
+
+  <!-- MONTHLY SUMMARY -->
+  <div class="summary-card">
+    <h2 id="summaryTitle">September 2026</h2>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="label">💰 Income</div>
+        <div class="value" id="sumIncome">RM0.00</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">🧾 Expenses Reserved (Unpaid)</div>
+        <div class="value" id="sumExpenses">RM0.00</div>
+      </div>
+      <div class="summary-item wide">
+        <div class="label">🏦 Need in RHB (Still)</div>
+        <div class="value" id="sumRhb">RM0.00</div>
+      </div>
+      <div class="summary-item wide" id="sumMaybankWrap">
+        <div class="label">💳 Perbelanjaan Lain-lain</div>
+        <div class="value" id="sumMaybank">RM0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INCOME -->
+  <div class="card">
+    <h2>💰 Income</h2>
+    <div class="money-input-wrap">
+      <span class="prefix">RM</span>
+      <input type="number" inputmode="decimal" step="0.01" min="0" id="incomeInput" placeholder="0.00">
+    </div>
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="card">
+    <h2>🧾 Expenses</h2>
+    <p class="hint">Tandakan ✓ bila dah bayar — amount akan terus ditolak dari "Baki Expenses Reserved Tinggal" dalam RHB (tak payah catat sebagai pengeluaran lagi).</p>
+    <div id="expenseList"></div>
+    <div class="empty-state" id="emptyExpenses" style="display:none;">No expenses yet. Add your first one below.</div>
+    <button class="add-expense-btn" id="addExpenseBtn">+ Add Expense</button>
+    <div class="expense-total-row">
+      <div class="label">Total Expenses</div>
+      <div class="value" id="expenseTotal">RM0.00</div>
+    </div>
+    <div class="expense-paid-note" id="expensePaidNote"></div>
+    <div class="reserve-banner" id="reserveBanner">🔴 Need RM0.00 in RHB for Reserved Expenses</div>
+  </div>
+
+  <!-- RHB -->
+  <div class="card rhb">
+    <h2>🏦 RHB — Protected Money</h2>
+    <p class="hint">Money kept in RHB for reserved expenses only. This money is not counted as freely spendable Maybank money. Emergency fund is kept in ShopeePay Money+ / TNG Go+, not in RHB.</p>
+
+    <div class="row-line">
+      <div class="label">Expenses Reserved (Still Needed)</div>
+      <div class="value" id="rhbExpensesReserved">RM0.00</div>
+    </div>
+
+    <div class="row-line total">
+      <div class="label">Total Needed in RHB (Still)</div>
+      <div class="value" id="rhbTotal">RM0.00</div>
+    </div>
+
+    <div class="maybank-divider"></div>
+
+    <h2 style="margin-top:18px;">🔀 Pergerakan RHB</h2>
+    <p class="hint">Catat setiap pergerakan duit RHB — <strong>➖ tolak</strong> bila ambik keluar (untuk expenses yang disenaraikan atau perbelanjaan suka2 sebab duit Maybank dah habis), <strong>➕ tambah</strong> bila top-up balik ke RHB. Nota: expense yang dah ditandakan ✓ kat atas dah automatik ditolak dari baki Expenses, tak payah catat lagi kat sini — <strong>kecuali</strong> kalau amount sebenar yang keluar dari bank lain sikit (cth: RM193 bukan RM200 sebab bank charge). Dalam kes tu, catat je amount sebenar di sini dan link ke expense tu (🔗) — bila expense ditandakan ✓, app takkan double-count.</p>
+
+    <div id="rhbWithdrawalList"></div>
+    <div class="empty-state" id="emptyRhbWithdrawals" style="display:none;">Belum ada pergerakan RHB dicatat. Setiap kali ambik atau top-up duit RHB, catat di sini.</div>
+    <button class="add-expense-btn" id="addRhbWithdrawalBtn">+ Catat Pergerakan RHB</button>
+    <button class="add-expense-btn" id="autoLinkBtn" style="margin-top:8px; border-style:solid; background:var(--blue-soft); color:var(--blue);">🔗 Auto-link ikut nama (elak double-count)</button>
+
+    <div class="row-line total">
+      <div class="label">Jumlah Bersih Diambil dari RHB</div>
+      <div class="value" id="rhbWithdrawnTotal">RM0.00</div>
+    </div>
+
+    <div class="row-line total">
+      <div class="label">🧾 Baki RHB Sepatutnya (Expenses Reserved Tinggal)</div>
+      <div class="value" id="rhbComputedBalance">RM0.00</div>
+    </div>
+
+    <div class="shortfall-banner" id="rhbExpensesOverBanner" style="display:none;">
+      <div class="big" id="rhbExpensesOverAmount">⚠️ Expenses Reserved lebih guna RM0.00</div>
+      <div class="small">Pengeluaran dari RHB / expense yang dibayar dah melebihi jumlah yang direserve untuk bulan ni.</div>
+    </div>
+
+    <div class="maybank-divider" style="margin-top:18px;"></div>
+
+    <h2 style="margin-top:18px;">✅ Semak Baki RHB (Bank)</h2>
+    <p class="hint">Optional — masukkan baki RHB sebenar ikut app bank untuk pastikan catatan pergerakan di atas padan dengan baki sebenar.</p>
+
+    <div class="buffer-input-row">
+      <div class="label">Baki RHB Sekarang (Bank)</div>
+      <div class="buffer-input-wrap" style="width:150px;">
+        <span>RM</span>
+        <input type="number" inputmode="decimal" step="0.01" min="0" id="rhbBalanceInput" placeholder="0.00">
+      </div>
+    </div>
+
+    <div class="row-line" id="rhbReconcileRow" style="display:none;">
+      <div class="label" id="rhbReconcileLabel">Berbanding catatan</div>
+      <div class="value" id="rhbReconcileValue">RM0.00</div>
+    </div>
+  </div>
+
+  <!-- MAYBANK -->
+  <div class="card maybank">
+    <h2>💳 Maybank — Perbelanjaan Lain-lain</h2>
+
+    <div class="row-line" id="maybankAvailableRefRow">
+      <div class="label">Available (Awal)</div>
+      <div class="value" id="maybankAvailableRef">RM0.00</div>
+    </div>
+
+    <div class="shortfall-banner" id="shortfallBanner" style="display:none;">
+      <div class="big" id="shortfallAmount">⚠️ Short by RM0.00</div>
+      <div class="small">Income is not enough to cover the RHB reserves.</div>
+    </div>
+
+    <div class="maybank-divider"></div>
+
+    <h2 style="margin-top:18px;">➕ Income Luar untuk Suka2</h2>
+    <p class="hint">Duit yang masuk terus ke Maybank untuk suka2 — bukan dari income bulanan yang dah dikira kat atas. Cth: bonus, duit raya, side income, jual barang.</p>
+
+    <div id="extraIncomeList"></div>
+    <div class="empty-state" id="emptyExtraIncome" style="display:none;">Tiada income luar dicatat lagi.</div>
+    <button class="add-expense-btn" id="addExtraIncomeBtn">+ Catat Income Luar</button>
+
+    <div class="row-line" id="maybankExtraIncomeRow" style="display:none;">
+      <div class="label">➕ Income Luar untuk Suka2</div>
+      <div class="value" id="maybankExtraIncomeValue">RM0.00</div>
+    </div>
+    <div class="row-line total" id="maybankAdjustedRow" style="display:none;">
+      <div class="label">Jumlah Tersedia (Total)</div>
+      <div class="value" id="maybankAdjustedValue">RM0.00</div>
+    </div>
+
+    <div class="maybank-divider"></div>
+
+    <h2 style="margin-top:18px;">🧮 Kira Perbelanjaan Sebenar</h2>
+    <p class="hint">Tak ingat belanja apa? Takpe — masukkan je baki Maybank yang tinggal sekarang, app akan kira sendiri berapa yang dah dibelanjakan.</p>
+
+    <div class="buffer-input-row">
+      <div class="label">Baki Maybank Sekarang</div>
+      <div class="buffer-input-wrap" style="width:150px;">
+        <span>RM</span>
+        <input type="number" inputmode="decimal" step="0.01" min="0" id="maybankBalanceInput" placeholder="0.00">
+      </div>
+    </div>
+
+    <p class="hint" id="maybankEmptyHint" style="margin-top:10px; margin-bottom:0;">Belum masukkan baki semasa lagi.</p>
+
+    <div id="maybankBalanceResultBlock" class="result-block" style="display:none;">
+      <div class="result-label">Baki Tinggal untuk Berbelanja</div>
+      <div class="result-value positive" id="maybankBalanceBig">RM0.00</div>
+      <div class="result-note" id="maybankBalanceBigNote"></div>
+    </div>
+
+    <div class="row-line total" id="maybankSpentRow" style="display:none;">
+      <div class="label">Anggaran Dah Dibelanjakan</div>
+      <div class="value" id="maybankSpentValue">RM0.00</div>
+    </div>
+
+    <div class="shortfall-banner" id="maybankSurplusBanner" style="display:none;">
+      <div class="big" id="maybankSurplusAmount">ℹ️ Baki lebih RM0.00</div>
+      <div class="small">Baki semasa lebih tinggi dari jumlah yang sepatutnya ada — semak semula angka yang dimasukkan.</div>
+    </div>
+  </div>
+
+  <!-- ASNB -->
+  <div class="card asnb">
+    <h2>💰 ASNB</h2>
+    <p class="hint">Catat setiap kali masuk (simpanan/dividen) atau keluar (withdraw) — sekadar rekod, tak dikira dalam mana-mana total di atas. Baki ASNB dikira dalam 💰 Total Account Balances di bawah.</p>
+    <div id="asnbList"></div>
+    <div class="empty-state" id="emptyAsnb" style="display:none;">Belum ada catatan ASNB lagi.</div>
+    <button class="add-expense-btn" id="addAsnbBtn">+ Catat Transaksi ASNB</button>
+
+    <div class="row-line">
+      <div class="label">Total Masuk</div>
+      <div class="value" id="asnbTotalIn">RM0.00</div>
+    </div>
+    <div class="row-line">
+      <div class="label">Total Keluar</div>
+      <div class="value" id="asnbTotalOut">RM0.00</div>
+    </div>
+    <div class="row-line total">
+      <div class="label">Baki (ikut catatan)</div>
+      <div class="value" id="asnbNetTotal">RM0.00</div>
+    </div>
+
+    <div class="buffer-input-row" style="margin-top:10px;">
+      <div class="label">Baki Sebenar (ikut app ASNB)</div>
+      <div class="buffer-input-wrap" style="width:150px;">
+        <span>RM</span>
+        <input type="number" inputmode="decimal" step="0.01" min="0" id="asnbBalanceInput" placeholder="0.00">
+      </div>
+    </div>
+  </div>
+
+  <!-- TNG -->
+  <div class="card tng">
+    <h2>🚗 TNG Go+</h2>
+    <p class="hint">Catat setiap kali reload (masuk) atau guna untuk toll/parking (keluar) — sekadar rekod, tak dikira dalam mana-mana total di atas. Baki TNG Go+ dikira dalam 💰 Total Account Balances di bawah.</p>
+    <div id="tngList"></div>
+    <div class="empty-state" id="emptyTng" style="display:none;">Belum ada catatan TNG lagi.</div>
+    <button class="add-expense-btn" id="addTngBtn">+ Catat Transaksi TNG</button>
+
+    <div class="row-line">
+      <div class="label">Total Masuk (Reload)</div>
+      <div class="value" id="tngTotalIn">RM0.00</div>
+    </div>
+    <div class="row-line">
+      <div class="label">Total Keluar</div>
+      <div class="value" id="tngTotalOut">RM0.00</div>
+    </div>
+    <div class="row-line total">
+      <div class="label">Baki (ikut catatan)</div>
+      <div class="value" id="tngNetTotal">RM0.00</div>
+    </div>
+
+    <div class="buffer-input-row" style="margin-top:10px;">
+      <div class="label">Baki Sebenar (ikut app TNG)</div>
+      <div class="buffer-input-wrap" style="width:150px;">
+        <span>RM</span>
+        <input type="number" inputmode="decimal" step="0.01" min="0" id="tngBalanceInput" placeholder="0.00">
+      </div>
+    </div>
+  </div>
+
+  <!-- SHOPEEPAY MONEY+ -->
+  <div class="card shopeepay">
+    <h2>🛍️ ShopeePay Money+</h2>
+    <p class="hint">Simpanan kecemasan. Catat setiap kali masuk (top-up / simpanan / pulangan harian) atau keluar (guna / withdraw). Baki ShopeePay Money+ dikira dalam 💰 Total Account Balances di bawah.</p>
+    <div id="spList"></div>
+    <div class="empty-state" id="emptySp" style="display:none;">Belum ada catatan ShopeePay Money+ lagi.</div>
+    <button class="add-expense-btn" id="addSpBtn">+ Catat Transaksi ShopeePay Money+</button>
+
+    <div class="row-line">
+      <div class="label">Total Masuk</div>
+      <div class="value" id="spTotalIn">RM0.00</div>
+    </div>
+    <div class="row-line">
+      <div class="label">Total Keluar</div>
+      <div class="value" id="spTotalOut">RM0.00</div>
+    </div>
+    <div class="row-line total">
+      <div class="label">Baki (ikut catatan)</div>
+      <div class="value" id="spNetTotal" style="color:var(--orange);">RM0.00</div>
+    </div>
+
+    <div class="buffer-input-row" style="margin-top:10px;">
+      <div class="label">Baki Sebenar (ikut app ShopeePay)</div>
+      <div class="buffer-input-wrap" style="width:150px;">
+        <span>RM</span>
+        <input type="number" inputmode="decimal" step="0.01" min="0" id="spBalanceInput" placeholder="0.00">
+      </div>
+    </div>
+  </div>
+
+
+  <!-- OVERALL PERIOD SUMMARY -->
+  <div class="card">
+    <button class="overall-toggle" id="overallToggle">
+      <h2 style="margin:0;">📊 Overall Summary (Sep 2026 – Mar 2027)</h2>
+      <span class="chev">▾</span>
+    </button>
+    <div class="overall-body" id="overallBody">
+      <div class="overall-grid">
+        <div class="overall-item">
+          <div class="label">Total Income</div>
+          <div class="value" id="ovIncome">RM0.00</div>
+        </div>
+        <div class="overall-item">
+          <div class="label">Total Expenses Reserved</div>
+          <div class="value" id="ovExpenses">RM0.00</div>
+        </div>
+        <div class="overall-item">
+          <div class="label">Total RHB Required</div>
+          <div class="value" id="ovRhb">RM0.00</div>
+        </div>
+        <div class="overall-item">
+          <div class="label">Total Anggaran Dibelanjakan (Maybank)</div>
+          <div class="value" id="ovMaybankSpent">RM0.00</div>
+        </div>
+        <div class="overall-item wide accent">
+          <div class="label">Total Perbelanjaan Lain-lain</div>
+          <div class="value" id="ovMaybank">RM0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES / CATATAN -->
+  <div class="card">
+    <h2>📝 Catatan (<span id="notesMonthLabel">September 2026</span>)</h2>
+    <p class="hint">Nota untuk bulan ni je — bila tukar bulan, catatan lain akan keluar.</p>
+    <textarea class="notes-textarea" id="notesInput" placeholder="Tulis catatan awak di sini... contohnya reminder bayaran, benda nak follow up, dll."></textarea>
+    <div class="notes-meta">
+      <span class="notes-count" id="notesCount">0 aksara</span>
+      <button class="notes-clear-btn" id="notesClearBtn" type="button">Kosongkan</button>
+    </div>
+  </div>
+
+  <!-- TOTAL ACCOUNT BALANCES -->
+  <div class="summary-card totals-card">
+    <h2>💰 Total Account Balances <span style="font-weight:600; color:var(--text-inverse-soft); font-size:12px;">(<span id="totalsMonthLabel">Sep 2026</span>)</span></h2>
+    <div class="totals-grid">
+      <div class="totals-tile all">
+        <div class="label">Total All</div>
+        <div class="value" id="totalAllValue">RM0.00</div>
+        <div class="formula">RHB + ASNB + TNG Go+ + Maybank + ShopeePay Money+</div>
+      </div>
+      <div class="totals-tile available">
+        <div class="label">Total Available</div>
+        <div class="value" id="totalAvailableValue">RM0.00</div>
+        <div class="formula">TNG Go+ + Maybank + ShopeePay Money+</div>
+      </div>
+    </div>
+    <div id="accountBalanceList"></div>
+    <div class="totals-warning" id="totalsWarning" style="display:none;"></div>
+    <div class="totals-footnote">Guna baki sebenar yang dimasukkan untuk bulan ni. Kalau belum ada, guna baki sebenar terkini dari bulan sebelum, atau baki ikut catatan bulan ni (kalau ada catatan). Hanya baki akaun dijumlahkan — income, transfer dan catatan transaksi tak dikira dua kali.</div>
+  </div>
+
+  <!-- RESET -->
+  <div class="card">
+    <h2>⚙️ Reset</h2>
+    <div class="reset-row">
+      <button class="reset-btn month" id="resetMonthBtn">Reset This Month</button>
+      <button class="reset-btn all" id="resetAllBtn">Reset All Data</button>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    All data is stored locally in this browser only. No account, backend, or internet connection required.
+  </footer>
+
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <h3 id="modalTitle">Are you sure?</h3>
+    <p id="modalMessage">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="cancel" id="modalCancel">Cancel</button>
+      <button class="confirm" id="modalConfirm">Yes, Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     CONSTANTS
+     ============================================================ */
+  var STORAGE_KEY = "moneyTrackerData_v1";
+
+  var MONTHS = [
+    { key: "2026-09", label: "September 2026", short: "Sep 2026" },
+    { key: "2026-10", label: "October 2026",   short: "Oct 2026" },
+    { key: "2026-11", label: "November 2026",  short: "Nov 2026" },
+    { key: "2026-12", label: "December 2026",  short: "Dec 2026" },
+    { key: "2027-01", label: "January 2027",   short: "Jan 2027" },
+    { key: "2027-02", label: "February 2027",  short: "Feb 2027" },
+    { key: "2027-03", label: "March 2027",     short: "Mar 2027" }
+  ];
+
+  /* ============================================================
+     STATE
+     ============================================================ */
+  var state = null;         // { selectedMonth, months: { key: { income, expenses:[{id,name,amount}], rhbWithdrawals:[{id,name,amount,pocket,direction}], maybankExtraIncome:[{id,name,amount}], spEntries:[{id,name,amount,direction}], spCurrentBalance } } }
+  var expenseIdCounter = 1;
+  var withdrawalIdCounter = 1;
+  var extraIncomeIdCounter = 1;
+  var asnbIdCounter = 1;
+  var tngIdCounter = 1;
+  var spIdCounter = 1;
+  var pendingResetAction = null; // function to run if modal confirmed
+
+  function emptyMonth(){
+    return { income: 0, expenses: [], rhbWithdrawals: [], maybankExtraIncome: [], maybankCurrentBalance: null, rhbCurrentBalance: null, notes: "", asnbEntries: [], asnbCurrentBalance: null, tngEntries: [], tngCurrentBalance: null, spEntries: [], spCurrentBalance: null };
+  }
+
+  function defaultState(){
+    var months = {};
+    MONTHS.forEach(function(m){ months[m.key] = emptyMonth(); });
+    return { selectedMonth: MONTHS[0].key, months: months };
+  }
+
+  /* ============================================================
+     PERSISTENCE
+     ============================================================ */
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      var parsed = JSON.parse(raw);
+      if(!parsed || !parsed.months) return defaultState();
+
+      // ensure every expected month exists (in case of future edits)
+      MONTHS.forEach(function(m){
+        if(!parsed.months[m.key]) parsed.months[m.key] = emptyMonth();
+        var mo = parsed.months[m.key];
+        if(typeof mo.income !== "number" || isNaN(mo.income)) mo.income = 0;
+        // The RHB Emergency/Buffer allocation has been retired (emergency fund
+        // now lives in ShopeePay Money+ / TNG Go+). An old saved "buffer" value
+        // is left untouched in storage but is no longer read anywhere.
+        if(!Array.isArray(mo.expenses)) mo.expenses = [];
+        mo.expenses.forEach(function(e){
+          if(typeof e.paid !== "boolean") e.paid = false;
+        });
+        if(!Array.isArray(mo.rhbWithdrawals)) mo.rhbWithdrawals = [];
+        mo.rhbWithdrawals.forEach(function(w){
+          if(typeof w.amount !== "number" || isNaN(w.amount)) w.amount = 0;
+          // RHB now has a single pocket. Old "emergency" movements were still
+          // real bank movements, so they are kept and folded into the RHB
+          // (Expenses) pocket; the original pocket is remembered in legacyPocket.
+          if(w.pocket === "emergency") w.legacyPocket = "emergency";
+          w.pocket = "expenses";
+          if(w.direction !== "in" && w.direction !== "out") w.direction = "out";
+          if(typeof w.name !== "string") w.name = "";
+          if(typeof w.linkedExpenseId !== "string") w.linkedExpenseId = null;
+          // drop stale links pointing at expenses that no longer exist
+          if(w.linkedExpenseId && !mo.expenses.some(function(e){ return e.id === w.linkedExpenseId; })){
+            w.linkedExpenseId = null;
+          }
+        });
+        if(!Array.isArray(mo.maybankExtraIncome)) mo.maybankExtraIncome = [];
+        mo.maybankExtraIncome.forEach(function(x){
+          if(typeof x.amount !== "number" || isNaN(x.amount)) x.amount = 0;
+          if(typeof x.name !== "string") x.name = "";
+        });
+        if(typeof mo.maybankCurrentBalance !== "number" || isNaN(mo.maybankCurrentBalance)){
+          mo.maybankCurrentBalance = null;
+        }
+        if(typeof mo.rhbCurrentBalance !== "number" || isNaN(mo.rhbCurrentBalance)){
+          mo.rhbCurrentBalance = null;
+        }
+        if(typeof mo.notes !== "string") mo.notes = "";
+        if(!Array.isArray(mo.asnbEntries)) mo.asnbEntries = [];
+        mo.asnbEntries.forEach(function(x){
+          if(typeof x.amount !== "number" || isNaN(x.amount)) x.amount = 0;
+          if(typeof x.name !== "string") x.name = "";
+          if(x.direction !== "in" && x.direction !== "out") x.direction = "in";
+        });
+        if(typeof mo.asnbCurrentBalance !== "number" || isNaN(mo.asnbCurrentBalance)){
+          mo.asnbCurrentBalance = null;
+        }
+        if(!Array.isArray(mo.tngEntries)) mo.tngEntries = [];
+        mo.tngEntries.forEach(function(x){
+          if(typeof x.amount !== "number" || isNaN(x.amount)) x.amount = 0;
+          if(typeof x.name !== "string") x.name = "";
+          if(x.direction !== "in" && x.direction !== "out") x.direction = "in";
+        });
+        if(typeof mo.tngCurrentBalance !== "number" || isNaN(mo.tngCurrentBalance)){
+          mo.tngCurrentBalance = null;
+        }
+        if(!Array.isArray(mo.spEntries)) mo.spEntries = [];
+        mo.spEntries.forEach(function(x){
+          if(typeof x.amount !== "number" || isNaN(x.amount)) x.amount = 0;
+          if(typeof x.name !== "string") x.name = "";
+          if(x.direction !== "in" && x.direction !== "out") x.direction = "in";
+        });
+        if(typeof mo.spCurrentBalance !== "number" || isNaN(mo.spCurrentBalance)){
+          mo.spCurrentBalance = null;
+        }
+      });
+      if(!parsed.selectedMonth || !parsed.months[parsed.selectedMonth]){
+        parsed.selectedMonth = MONTHS[0].key;
+      }
+
+      // figure out next expense id counter
+      var maxId = 0;
+      var maxWdId = 0;
+      var maxExtraId = 0;
+      var maxAsnbId = 0;
+      var maxTngId = 0;
+      var maxSpId = 0;
+      Object.keys(parsed.months).forEach(function(k){
+        (parsed.months[k].spEntries || []).forEach(function(x){
+          var n6 = parseInt(String(x.id).replace(/[^0-9]/g,""), 10);
+          if(!isNaN(n6) && n6 > maxSpId) maxSpId = n6;
+        });
+        parsed.months[k].expenses.forEach(function(e){
+          var n = parseInt(String(e.id).replace(/[^0-9]/g,""), 10);
+          if(!isNaN(n) && n > maxId) maxId = n;
+        });
+        parsed.months[k].rhbWithdrawals.forEach(function(w){
+          var n2 = parseInt(String(w.id).replace(/[^0-9]/g,""), 10);
+          if(!isNaN(n2) && n2 > maxWdId) maxWdId = n2;
+        });
+        parsed.months[k].maybankExtraIncome.forEach(function(x){
+          var n3 = parseInt(String(x.id).replace(/[^0-9]/g,""), 10);
+          if(!isNaN(n3) && n3 > maxExtraId) maxExtraId = n3;
+        });
+        parsed.months[k].asnbEntries.forEach(function(x){
+          var n4 = parseInt(String(x.id).replace(/[^0-9]/g,""), 10);
+          if(!isNaN(n4) && n4 > maxAsnbId) maxAsnbId = n4;
+        });
+        parsed.months[k].tngEntries.forEach(function(x){
+          var n5 = parseInt(String(x.id).replace(/[^0-9]/g,""), 10);
+          if(!isNaN(n5) && n5 > maxTngId) maxTngId = n5;
+        });
+      });
+      expenseIdCounter = maxId + 1;
+      withdrawalIdCounter = maxWdId + 1;
+      extraIncomeIdCounter = maxExtraId + 1;
+      asnbIdCounter = maxAsnbId + 1;
+      tngIdCounter = maxTngId + 1;
+      spIdCounter = maxSpId + 1;
+
+      return parsed;
+    }catch(err){
+      console.error("Failed to load saved data, starting fresh.", err);
+      return defaultState();
+    }
+  }
+
+  var saveTimer = null;
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      showSaved();
+    }catch(err){
+      console.error("Failed to save data.", err);
+    }
+  }
+
+  function showSaved(){
+    var el = document.getElementById("saveIndicator");
+    el.classList.add("show");
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){ el.classList.remove("show"); }, 1200);
+  }
+
+  /* ============================================================
+     FORMATTING
+     ============================================================ */
+  function formatRM(amount){
+    var n = Number(amount);
+    if(isNaN(n)) n = 0;
+    var negative = n < 0;
+    n = Math.abs(n);
+    var formatted = n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (negative ? "-RM" : "RM") + formatted;
+  }
+
+  /* ============================================================
+     CALCULATION LOGIC
+     ============================================================ */
+  function calcMonth(monthData){
+    var expensesReserved = monthData.expenses.reduce(function(sum, e){
+      var amt = Number(e.amount);
+      return sum + (isNaN(amt) ? 0 : amt);
+    }, 0);
+
+    var income = Number(monthData.income) || 0;
+
+    // RHB holds reserved expenses only — the emergency fund is no longer kept here.
+    var rhbRequired = expensesReserved;
+    var remaining = income - rhbRequired;
+
+    var maybankOtherSpending, shortfall;
+    if(remaining >= 0){
+      maybankOtherSpending = remaining;
+      shortfall = 0;
+    } else {
+      maybankOtherSpending = 0;
+      shortfall = Math.abs(remaining);
+    }
+
+    // RHB movement log: every ringgit moved in or out of RHB is logged by hand
+    // with a direction ("out" = withdrawn, "in" = topped back up). "in" entries
+    // offset "out" entries so the net figure reflects real movement either way.
+    var rhbWithdrawals = Array.isArray(monthData.rhbWithdrawals) ? monthData.rhbWithdrawals : [];
+    var expensesWithdrawn = 0; // net taken OUT of RHB
+    rhbWithdrawals.forEach(function(w){
+      var amt = Number(w.amount);
+      if(isNaN(amt)) amt = 0;
+      expensesWithdrawn += (w.direction === "in") ? -amt : amt; // "in" offsets withdrawals
+    });
+
+    // Ticking an expense as paid also counts as money leaving the Expenses
+    // pocket in RHB — on top of anything logged manually above — so the
+    // "still needed" figure drops automatically once an expense is settled.
+    // This headline total is NOT affected by linking below — it always
+    // reflects the full reserved amount for every paid expense.
+    var paidExpensesTotal = monthData.expenses.reduce(function(sum, e){
+      if(!e.paid) return sum;
+      var amt = Number(e.amount);
+      return sum + (isNaN(amt) ? 0 : amt);
+    }, 0);
+
+    // A withdrawal in the Pergerakan RHB log can optionally be linked to a
+    // specific expense (e.g. "sewa -RM193" linked to the "sewa" expense).
+    // When linked, that withdrawal IS the money that left RHB for that
+    // expense — so if the expense is also ticked paid, we must not ALSO
+    // subtract its full reserved amount again in the reconciliation below,
+    // or it gets double-counted. The headline paidExpensesTotal above stays
+    // untouched by this — only the movement-log reconciliation is adjusted.
+    var linkedExpenseIds = {};
+    rhbWithdrawals.forEach(function(w){
+      if(w.linkedExpenseId){
+        linkedExpenseIds[w.linkedExpenseId] = true;
+      }
+    });
+    var paidExpensesForReconcile = monthData.expenses.reduce(function(sum, e){
+      if(!e.paid) return sum;
+      if(linkedExpenseIds[e.id]) return sum; // already reflected via the linked withdrawal
+      var amt = Number(e.amount);
+      return sum + (isNaN(amt) ? 0 : amt);
+    }, 0);
+
+    var totalWithdrawn = expensesWithdrawn + paidExpensesForReconcile;
+    var expensesRemaining = expensesReserved - expensesWithdrawn - paidExpensesForReconcile;
+    var computedRhbBalance = expensesRemaining;
+    var expensesOverBy = expensesRemaining < 0 ? Math.abs(expensesRemaining) : 0;
+
+    // Headline "still needed" figures — driven ONLY by the paid ticks, not by
+    // whatever is logged in the Pergerakan RHB movement log. The movement log
+    // is a separate, more detailed reconciliation tool (see expensesRemaining
+    // above); it should never silently change what these headline numbers show.
+    // Total Needed in RHB = Expenses Reserved (still unpaid).
+    var expensesStillNeeded = expensesReserved - paidExpensesTotal;
+    var rhbStillNeededTotal = expensesStillNeeded;
+
+    // Optional reconciliation: compare the computed balance above against the
+    // actual balance shown in the bank app, to catch un-logged movements.
+    var hasRhbBalanceEntry = typeof monthData.rhbCurrentBalance === "number" && !isNaN(monthData.rhbCurrentBalance);
+    var rhbCurrentBalance = hasRhbBalanceEntry ? monthData.rhbCurrentBalance : null;
+    var rhbReconcileDiff = hasRhbBalanceEntry ? (rhbCurrentBalance - computedRhbBalance) : 0;
+
+    // Balance-based spending calc: user enters what's LEFT in Maybank right now,
+    // and we work backwards to estimate how much was actually spent. Any
+    // external income logged as extra suka2 money is added on top, so legit
+    // extra income doesn't look like an unexplained surplus.
+    var maybankExtraIncomeList = Array.isArray(monthData.maybankExtraIncome) ? monthData.maybankExtraIncome : [];
+    var maybankExtraIncome = maybankExtraIncomeList.reduce(function(sum, x){
+      var amt = Number(x.amount);
+      return sum + (isNaN(amt) ? 0 : amt);
+    }, 0);
+    var maybankAvailableAdjusted = maybankOtherSpending + maybankExtraIncome;
+    var hasBalanceEntry = typeof monthData.maybankCurrentBalance === "number" && !isNaN(monthData.maybankCurrentBalance);
+    var maybankCurrentBalance = hasBalanceEntry ? monthData.maybankCurrentBalance : null;
+    var maybankSpentEstimate = 0;
+    var maybankSurplus = 0;
+
+    if(hasBalanceEntry){
+      var diff = maybankAvailableAdjusted - maybankCurrentBalance;
+      if(diff >= 0){
+        maybankSpentEstimate = diff;
+        maybankSurplus = 0;
+      } else {
+        // current balance is higher than what should be available — flag it, don't show negative spending
+        maybankSpentEstimate = 0;
+        maybankSurplus = Math.abs(diff);
+      }
+    }
+
+    return {
+      income: income,
+      expensesReserved: expensesReserved,
+      rhbRequired: rhbRequired,
+      remaining: remaining,
+      maybankOtherSpending: maybankOtherSpending,
+      shortfall: shortfall,
+      maybankExtraIncome: maybankExtraIncome,
+      maybankAvailableAdjusted: maybankAvailableAdjusted,
+      hasBalanceEntry: hasBalanceEntry,
+      maybankCurrentBalance: maybankCurrentBalance,
+      maybankSpentEstimate: maybankSpentEstimate,
+      maybankSurplus: maybankSurplus,
+      paidExpensesTotal: paidExpensesTotal,
+      paidExpensesForReconcile: paidExpensesForReconcile,
+      expensesStillNeeded: expensesStillNeeded,
+      rhbStillNeededTotal: rhbStillNeededTotal,
+      expensesWithdrawn: expensesWithdrawn,
+      totalWithdrawn: totalWithdrawn,
+      expensesRemaining: expensesRemaining,
+      computedRhbBalance: computedRhbBalance,
+      expensesOverBy: expensesOverBy,
+      hasRhbBalanceEntry: hasRhbBalanceEntry,
+      rhbCurrentBalance: rhbCurrentBalance,
+      rhbReconcileDiff: rhbReconcileDiff
+    };
+  }
+
+  /* ============================================================
+     RENDER: MONTH TABS
+     ============================================================ */
+  function renderMonthTabs(){
+    var wrap = document.getElementById("monthTabs");
+    wrap.innerHTML = "";
+    MONTHS.forEach(function(m){
+      var btn = document.createElement("button");
+      btn.className = "month-tab" + (m.key === state.selectedMonth ? " active" : "");
+      btn.textContent = m.short;
+      btn.addEventListener("click", function(){
+        state.selectedMonth = m.key;
+        saveState();
+        renderAll();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  /* ============================================================
+     RENDER: EXPENSE LIST
+     ============================================================ */
+  function renderExpenseList(monthData){
+    var list = document.getElementById("expenseList");
+    var empty = document.getElementById("emptyExpenses");
+    list.innerHTML = "";
+
+    if(monthData.expenses.length === 0){
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+    }
+
+    monthData.expenses.forEach(function(expense){
+      var row = document.createElement("div");
+      row.className = "expense-row" + (expense.paid ? " is-paid" : "");
+
+      var paidBtn = document.createElement("button");
+      paidBtn.type = "button";
+      paidBtn.className = "paid-checkbox" + (expense.paid ? " checked" : "");
+      paidBtn.setAttribute("aria-label", "Tandakan dah bayar");
+      paidBtn.textContent = expense.paid ? "✓" : "";
+      paidBtn.addEventListener("click", function(){
+        expense.paid = !expense.paid;
+        saveState();
+        renderExpenseList(monthData);
+        renderCalculations();
+      });
+
+      var nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.placeholder = "Expense name";
+      nameInput.value = expense.name;
+      nameInput.addEventListener("input", function(){
+        expense.name = nameInput.value;
+        saveState();
+        // no need to re-render whole list, just re-render totals/summary
+        renderCalculations();
+      });
+
+      var amountWrap = document.createElement("div");
+      amountWrap.className = "amount-wrap";
+      var amountLabel = document.createElement("span");
+      amountLabel.textContent = "RM";
+      var amountInput = document.createElement("input");
+      amountInput.type = "number";
+      amountInput.inputMode = "decimal";
+      amountInput.step = "0.01";
+      amountInput.min = "0";
+      amountInput.placeholder = "0.00";
+      amountInput.value = expense.amount === 0 ? "" : expense.amount;
+      amountInput.addEventListener("input", function(){
+        var val = parseFloat(amountInput.value);
+        expense.amount = isNaN(val) ? 0 : val;
+        saveState();
+        renderCalculations();
+      });
+      amountWrap.appendChild(amountLabel);
+      amountWrap.appendChild(amountInput);
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "del-btn";
+      delBtn.setAttribute("aria-label", "Delete expense");
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", function(){
+        var monthObj = state.months[state.selectedMonth];
+        var idx = monthObj.expenses.findIndex(function(e){ return e.id === expense.id; });
+        if(idx > -1){
+          monthObj.expenses.splice(idx, 1);
+          saveState();
+          renderAll();
+        }
+      });
+
+      row.appendChild(paidBtn);
+      row.appendChild(nameInput);
+      row.appendChild(amountWrap);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    });
+
+    var paidNote = document.getElementById("expensePaidNote");
+    if(monthData.expenses.length === 0){
+      paidNote.textContent = "";
+    } else {
+      var paidCount = monthData.expenses.filter(function(e){ return e.paid; }).length;
+      var paidTotal = monthData.expenses.filter(function(e){ return e.paid; }).reduce(function(s, e){
+        var a = Number(e.amount);
+        return s + (isNaN(a) ? 0 : a);
+      }, 0);
+      paidNote.textContent = "✓ " + paidCount + " dari " + monthData.expenses.length + " dah dibayar — " + formatRM(paidTotal) + " ditolak dari baki RHB (Expenses) secara automatik.";
+    }
+  }
+
+  /* ============================================================
+     RENDER: RHB WITHDRAWAL LIST
+     ============================================================ */
+  function renderRhbWithdrawalList(monthData){
+    var list = document.getElementById("rhbWithdrawalList");
+    var empty = document.getElementById("emptyRhbWithdrawals");
+    list.innerHTML = "";
+
+    if(monthData.rhbWithdrawals.length === 0){
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+    }
+
+    monthData.rhbWithdrawals.forEach(function(w){
+      var row = document.createElement("div");
+      row.className = "withdrawal-row";
+
+      var top = document.createElement("div");
+      top.className = "wd-top";
+
+      var nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.placeholder = "Untuk apa? (cth: Shopee suka2 / Top-up balik)";
+      nameInput.value = w.name;
+      nameInput.addEventListener("input", function(){
+        w.name = nameInput.value;
+        saveState();
+        renderCalculations();
+      });
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "del-btn";
+      delBtn.setAttribute("aria-label", "Padam catatan");
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", function(){
+        var monthObj = state.months[state.selectedMonth];
+        var idx = monthObj.rhbWithdrawals.findIndex(function(x){ return x.id === w.id; });
+        if(idx > -1){
+          monthObj.rhbWithdrawals.splice(idx, 1);
+          saveState();
+          renderAll();
+        }
+      });
+
+      top.appendChild(nameInput);
+      top.appendChild(delBtn);
+
+      var bottom = document.createElement("div");
+      bottom.className = "wd-bottom";
+
+      // Direction select (RHB has a single Expenses pocket now)
+      var pocketSelect = document.createElement("select");
+      pocketSelect.className = "pocket-select dir-" + w.direction;
+
+      var options = [
+        { value: "out-expenses",  text: "➖ Tolak dari RHB" },
+        { value: "in-expenses",   text: "➕ Tambah ke RHB" }
+      ];
+      options.forEach(function(opt){
+        var o = document.createElement("option");
+        o.value = opt.value;
+        o.textContent = opt.text;
+        pocketSelect.appendChild(o);
+      });
+      pocketSelect.value = w.direction + "-" + w.pocket;
+      pocketSelect.addEventListener("change", function(){
+        var parts = pocketSelect.value.split("-");
+        w.direction = parts[0];
+        w.pocket = parts[1];
+        pocketSelect.className = "pocket-select dir-" + w.direction;
+        saveState();
+        renderCalculations();
+      });
+
+      var amountWrap = document.createElement("div");
+      amountWrap.className = "amount-wrap";
+      var amountLabel = document.createElement("span");
+      amountLabel.textContent = "RM";
+      var amountInput = document.createElement("input");
+      amountInput.type = "number";
+      amountInput.inputMode = "decimal";
+      amountInput.step = "0.01";
+      amountInput.min = "0";
+      amountInput.placeholder = "0.00";
+      amountInput.value = w.amount === 0 ? "" : w.amount;
+      amountInput.addEventListener("input", function(){
+        var val = parseFloat(amountInput.value);
+        w.amount = isNaN(val) ? 0 : val;
+        saveState();
+        renderCalculations();
+      });
+      amountWrap.appendChild(amountLabel);
+      amountWrap.appendChild(amountInput);
+
+      bottom.appendChild(pocketSelect);
+      bottom.appendChild(amountWrap);
+
+      // Optional: link this withdrawal to a specific expense so that ticking
+      // that expense "paid" doesn't ALSO subtract its full reserved amount
+      // again (which would double-count against the amount already logged here).
+      var linkRow = document.createElement("div");
+      linkRow.className = "wd-link-row";
+      linkRow.style.marginTop = "8px";
+
+      var linkSelect = document.createElement("select");
+      linkSelect.className = "pocket-select";
+
+      function buildLinkOptions(){
+        linkSelect.innerHTML = "";
+        var noneOpt = document.createElement("option");
+        noneOpt.value = "";
+        noneOpt.textContent = "🔗 Tak link ke expense tertentu";
+        linkSelect.appendChild(noneOpt);
+        monthData.expenses.forEach(function(exp){
+          var o = document.createElement("option");
+          o.value = exp.id;
+          o.textContent = "🔗 " + (exp.name || "(Tiada nama)") + " — " + formatRM(exp.amount);
+          linkSelect.appendChild(o);
+        });
+        linkSelect.value = w.linkedExpenseId || "";
+      }
+      buildLinkOptions();
+
+      linkSelect.addEventListener("change", function(){
+        w.linkedExpenseId = linkSelect.value || null;
+        saveState();
+        renderCalculations();
+      });
+
+      linkRow.appendChild(linkSelect);
+
+      row.appendChild(top);
+      row.appendChild(bottom);
+      row.appendChild(linkRow);
+      list.appendChild(row);
+    });
+  }
+
+  /* ============================================================
+     RENDER: EXTRA INCOME LIST (income luar untuk suka2)
+     ============================================================ */
+  function renderExtraIncomeList(monthData){
+    var list = document.getElementById("extraIncomeList");
+    var empty = document.getElementById("emptyExtraIncome");
+    list.innerHTML = "";
+
+    if(monthData.maybankExtraIncome.length === 0){
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+    }
+
+    monthData.maybankExtraIncome.forEach(function(x){
+      var row = document.createElement("div");
+      row.className = "expense-row";
+
+      var nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.placeholder = "Dari mana? (cth: Bonus kerja)";
+      nameInput.value = x.name;
+      nameInput.addEventListener("input", function(){
+        x.name = nameInput.value;
+        saveState();
+        renderCalculations();
+      });
+
+      var amountWrap = document.createElement("div");
+      amountWrap.className = "amount-wrap";
+      var amountLabel = document.createElement("span");
+      amountLabel.textContent = "RM";
+      var amountInput = document.createElement("input");
+      amountInput.type = "number";
+      amountInput.inputMode = "decimal";
+      amountInput.step = "0.01";
+      amountInput.min = "0";
+      amountInput.placeholder = "0.00";
+      amountInput.value = x.amount === 0 ? "" : x.amount;
+      amountInput.addEventListener("input", function(){
+        var val = parseFloat(amountInput.value);
+        x.amount = isNaN(val) ? 0 : val;
+        saveState();
+        renderCalculations();
+      });
+      amountWrap.appendChild(amountLabel);
+      amountWrap.appendChild(amountInput);
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "del-btn";
+      delBtn.setAttribute("aria-label", "Padam income luar");
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", function(){
+        var monthObj = state.months[state.selectedMonth];
+        var idx = monthObj.maybankExtraIncome.findIndex(function(e){ return e.id === x.id; });
+        if(idx > -1){
+          monthObj.maybankExtraIncome.splice(idx, 1);
+          saveState();
+          renderAll();
+        }
+      });
+
+      row.appendChild(nameInput);
+      row.appendChild(amountWrap);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    });
+  }
+
+  /* ============================================================
+     RENDER: TRACKER LISTS (ASNB / TNG) — manual masuk/keluar log,
+     purely for record-keeping, not fed into any other calculation.
+     ============================================================ */
+  function renderTrackerList(monthData, opts){
+    var entries = monthData[opts.entriesKey];
+    var list = document.getElementById(opts.listId);
+    var empty = document.getElementById(opts.emptyId);
+    list.innerHTML = "";
+
+    if(entries.length === 0){
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+    }
+
+    var totalIn = 0, totalOut = 0;
+
+    entries.forEach(function(x){
+      var amt = Number(x.amount);
+      if(isNaN(amt)) amt = 0;
+      if(x.direction === "out") totalOut += amt; else totalIn += amt;
+
+      var row = document.createElement("div");
+      row.className = "withdrawal-row";
+
+      var top = document.createElement("div");
+      top.className = "wd-top";
+
+      var nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.placeholder = opts.namePlaceholder;
+      nameInput.value = x.name;
+      nameInput.addEventListener("input", function(){
+        x.name = nameInput.value;
+        saveState();
+        renderTrackerTotals(monthData, opts);
+      });
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "del-btn";
+      delBtn.setAttribute("aria-label", "Padam catatan");
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", function(){
+        var monthObj = state.months[state.selectedMonth];
+        var idx = monthObj[opts.entriesKey].findIndex(function(e){ return e.id === x.id; });
+        if(idx > -1){
+          monthObj[opts.entriesKey].splice(idx, 1);
+          saveState();
+          renderTrackerList(monthObj, opts);
+        }
+      });
+
+      top.appendChild(nameInput);
+      top.appendChild(delBtn);
+
+      var bottom = document.createElement("div");
+      bottom.className = "wd-bottom";
+
+      var dirSelect = document.createElement("select");
+      dirSelect.className = "pocket-select dir-" + x.direction;
+      var optIn = document.createElement("option");
+      optIn.value = "in";
+      optIn.textContent = "⬆️ Masuk";
+      var optOut = document.createElement("option");
+      optOut.value = "out";
+      optOut.textContent = "⬇️ Keluar";
+      dirSelect.appendChild(optIn);
+      dirSelect.appendChild(optOut);
+      dirSelect.value = x.direction;
+      dirSelect.addEventListener("change", function(){
+        x.direction = dirSelect.value;
+        dirSelect.className = "pocket-select dir-" + x.direction;
+        saveState();
+        renderTrackerTotals(monthData, opts);
+      });
+
+      var amountWrap = document.createElement("div");
+      amountWrap.className = "amount-wrap";
+      var amountLabel = document.createElement("span");
+      amountLabel.textContent = "RM";
+      var amountInput = document.createElement("input");
+      amountInput.type = "number";
+      amountInput.inputMode = "decimal";
+      amountInput.step = "0.01";
+      amountInput.min = "0";
+      amountInput.placeholder = "0.00";
+      amountInput.value = x.amount === 0 ? "" : x.amount;
+      amountInput.addEventListener("input", function(){
+        var val = parseFloat(amountInput.value);
+        x.amount = isNaN(val) ? 0 : val;
+        saveState();
+        renderTrackerTotals(monthData, opts);
+      });
+      amountWrap.appendChild(amountLabel);
+      amountWrap.appendChild(amountInput);
+
+      bottom.appendChild(dirSelect);
+      bottom.appendChild(amountWrap);
+
+      row.appendChild(top);
+      row.appendChild(bottom);
+      list.appendChild(row);
+    });
+
+    renderTrackerTotals(monthData, opts);
+  }
+
+  function renderTrackerTotals(monthData, opts){
+    var entries = monthData[opts.entriesKey];
+    var totalIn = 0, totalOut = 0;
+    entries.forEach(function(x){
+      var amt = Number(x.amount);
+      if(isNaN(amt)) amt = 0;
+      if(x.direction === "out") totalOut += amt; else totalIn += amt;
+    });
+    document.getElementById(opts.totalInId).textContent = formatRM(totalIn);
+    document.getElementById(opts.totalOutId).textContent = formatRM(totalOut);
+    document.getElementById(opts.netId).textContent = formatRM(totalIn - totalOut);
+    // tracker balances can feed the final Total Account Balances card
+    renderAccountTotals();
+  }
+
+  var ASNB_OPTS = {
+    entriesKey: "asnbEntries",
+    listId: "asnbList",
+    emptyId: "emptyAsnb",
+    totalInId: "asnbTotalIn",
+    totalOutId: "asnbTotalOut",
+    netId: "asnbNetTotal",
+    namePlaceholder: "Cth: Simpanan bulanan / Dividen"
+  };
+
+  var TNG_OPTS = {
+    entriesKey: "tngEntries",
+    listId: "tngList",
+    emptyId: "emptyTng",
+    totalInId: "tngTotalIn",
+    totalOutId: "tngTotalOut",
+    netId: "tngNetTotal",
+    namePlaceholder: "Cth: Reload / Toll / Parking"
+  };
+
+  var SP_OPTS = {
+    entriesKey: "spEntries",
+    listId: "spList",
+    emptyId: "emptySp",
+    totalInId: "spTotalIn",
+    totalOutId: "spTotalOut",
+    netId: "spNetTotal",
+    namePlaceholder: "Cth: Simpanan kecemasan / Withdraw"
+  };
+
+  /* ============================================================
+     RENDER: CALCULATIONS (everything derived)
+     ============================================================ */
+  function renderCalculations(){
+    var monthData = state.months[state.selectedMonth];
+    var monthMeta = MONTHS.find(function(m){ return m.key === state.selectedMonth; });
+    var calc = calcMonth(monthData);
+
+    // header + summary titles
+    document.getElementById("monthSubtitle").textContent = monthMeta.label;
+    document.getElementById("summaryTitle").textContent = monthMeta.label;
+
+    // top summary card
+    document.getElementById("sumIncome").textContent = formatRM(calc.income);
+    document.getElementById("sumExpenses").textContent = formatRM(Math.max(calc.expensesStillNeeded, 0));
+    document.getElementById("sumRhb").textContent = formatRM(Math.max(calc.rhbStillNeededTotal, 0));
+
+    var sumMaybankEl = document.getElementById("sumMaybank");
+    var sumMaybankWrap = document.getElementById("sumMaybankWrap");
+    sumMaybankWrap.classList.remove("positive", "warning");
+    if(calc.shortfall > 0){
+      sumMaybankEl.textContent = "Short by " + formatRM(calc.shortfall);
+      sumMaybankWrap.classList.add("warning");
+    } else {
+      sumMaybankEl.textContent = formatRM(calc.maybankOtherSpending);
+      sumMaybankWrap.classList.add("positive");
+    }
+
+    // expense total + reserve banner (shows what's still needed, i.e. unpaid, regardless of the RHB movement log below)
+    document.getElementById("expenseTotal").textContent = formatRM(calc.expensesReserved);
+    var stillNeeded = Math.max(calc.expensesStillNeeded, 0);
+    document.getElementById("reserveBanner").textContent =
+      "🔴 Need " + formatRM(stillNeeded) + " in RHB for Unpaid/Unreleased Expenses";
+
+    // RHB section — headline "still needed" figures driven ONLY by paid ticks,
+    // not by the Pergerakan RHB movement log (that log has its own reconciliation
+    // block further down: rhbComputedBalance).
+    document.getElementById("rhbExpensesReserved").textContent = formatRM(Math.max(calc.expensesStillNeeded, 0));
+    document.getElementById("rhbTotal").textContent = formatRM(Math.max(calc.rhbStillNeededTotal, 0));
+    renderRhbWithdrawalSummary(calc);
+
+    // Maybank section — "Available (Awal)" reference + shortfall warning
+    var availableRefRow = document.getElementById("maybankAvailableRefRow");
+    var shortfallBanner = document.getElementById("shortfallBanner");
+    var shortfallAmountEl = document.getElementById("shortfallAmount");
+
+    availableRefRow.classList.remove("positive-text", "zero-text");
+
+    if(calc.shortfall > 0){
+      shortfallBanner.style.display = "block";
+      shortfallAmountEl.textContent = "⚠️ Short by " + formatRM(calc.shortfall);
+    } else {
+      shortfallBanner.style.display = "none";
+    }
+
+    // Maybank balance-based spending section
+    renderMaybankBalanceSection(calc);
+
+    renderOverallSummary();
+    renderAccountTotals();
+  }
+
+  /* ============================================================
+     RENDER: RHB — movement-log summary + reconciliation
+     ============================================================ */
+  function renderRhbWithdrawalSummary(calc){
+    document.getElementById("rhbWithdrawnTotal").textContent = formatRM(calc.totalWithdrawn);
+    document.getElementById("rhbComputedBalance").textContent = formatRM(calc.computedRhbBalance);
+
+    var expOverBanner = document.getElementById("rhbExpensesOverBanner");
+    var expOverAmountEl = document.getElementById("rhbExpensesOverAmount");
+    if(calc.expensesOverBy > 0){
+      expOverBanner.style.display = "block";
+      expOverAmountEl.textContent = "⚠️ Expenses Reserved lebih guna " + formatRM(calc.expensesOverBy);
+    } else {
+      expOverBanner.style.display = "none";
+    }
+
+    // Reconciliation against the manually-entered bank balance
+    var reconcileRow = document.getElementById("rhbReconcileRow");
+    var reconcileLabel = document.getElementById("rhbReconcileLabel");
+    var reconcileValue = document.getElementById("rhbReconcileValue");
+
+    if(!calc.hasRhbBalanceEntry){
+      reconcileRow.style.display = "none";
+      return;
+    }
+
+    reconcileRow.style.display = "flex";
+    var diff = calc.rhbReconcileDiff;
+
+    if(Math.abs(diff) < 0.01){
+      reconcileLabel.textContent = "✅ Padan dengan catatan";
+      reconcileValue.textContent = formatRM(calc.computedRhbBalance);
+      reconcileValue.style.color = "var(--green)";
+    } else if(diff < 0){
+      // bank balance is lower than what the log says it should be —
+      // some movement likely wasn't logged
+      reconcileLabel.textContent = "⚠️ Kurang dari catatan (belum dicatat)";
+      reconcileValue.textContent = "-" + formatRM(Math.abs(diff));
+      reconcileValue.style.color = "var(--red)";
+    } else {
+      // bank balance is higher than expected — maybe an entry was wrongly
+      // logged, or extra money was topped up into RHB
+      reconcileLabel.textContent = "ℹ️ Lebih dari catatan";
+      reconcileValue.textContent = "+" + formatRM(diff);
+      reconcileValue.style.color = "var(--amber)";
+    }
+  }
+
+  /* ============================================================
+     RENDER: MAYBANK — Baki Semasa (large display)
+     ============================================================ */
+  function renderMaybankBalanceSection(calc){
+    document.getElementById("maybankAvailableRef").textContent = formatRM(calc.maybankOtherSpending);
+
+    var extraIncomeRow = document.getElementById("maybankExtraIncomeRow");
+    var extraIncomeValueEl = document.getElementById("maybankExtraIncomeValue");
+    var adjustedRow = document.getElementById("maybankAdjustedRow");
+    var adjustedValueEl = document.getElementById("maybankAdjustedValue");
+
+    if(calc.maybankExtraIncome > 0){
+      extraIncomeRow.style.display = "flex";
+      extraIncomeValueEl.textContent = "+ " + formatRM(calc.maybankExtraIncome);
+    } else {
+      extraIncomeRow.style.display = "none";
+    }
+
+    if(calc.maybankExtraIncome > 0){
+      adjustedRow.style.display = "flex";
+      adjustedValueEl.textContent = formatRM(calc.maybankAvailableAdjusted);
+    } else {
+      adjustedRow.style.display = "none";
+    }
+
+    var bigResult = document.getElementById("maybankBalanceBig");
+    var bigNote = document.getElementById("maybankBalanceBigNote");
+    var spentRow = document.getElementById("maybankSpentRow");
+    var spentValueEl = document.getElementById("maybankSpentValue");
+    var surplusBanner = document.getElementById("maybankSurplusBanner");
+    var surplusAmountEl = document.getElementById("maybankSurplusAmount");
+    var emptyHint = document.getElementById("maybankEmptyHint");
+    var resultBlockWrap = document.getElementById("maybankBalanceResultBlock");
+
+    if(!calc.hasBalanceEntry){
+      emptyHint.style.display = "block";
+      resultBlockWrap.style.display = "none";
+      spentRow.style.display = "none";
+      surplusBanner.style.display = "none";
+      return;
+    }
+
+    emptyHint.style.display = "none";
+    resultBlockWrap.style.display = "block";
+    spentRow.style.display = "flex";
+
+    bigResult.classList.remove("positive", "zero", "negative");
+
+    if(calc.maybankCurrentBalance <= 0){
+      bigResult.textContent = formatRM(0);
+      bigResult.classList.add(calc.maybankCurrentBalance < 0 ? "negative" : "zero");
+      bigNote.textContent = calc.maybankCurrentBalance < 0
+        ? "Baki negatif — semak semula akaun Maybank."
+        : "Tiada baki lagi untuk berbelanja bulan ni.";
+    } else {
+      bigResult.textContent = formatRM(calc.maybankCurrentBalance);
+      bigResult.classList.add("positive");
+      bigNote.textContent = "Ini baki sebenar yang tinggal untuk berbelanja bulan ni.";
+    }
+
+    spentValueEl.textContent = formatRM(calc.maybankSpentEstimate);
+
+    if(calc.maybankSurplus > 0){
+      surplusBanner.style.display = "block";
+      surplusAmountEl.textContent = "ℹ️ Baki lebih " + formatRM(calc.maybankSurplus);
+    } else {
+      surplusBanner.style.display = "none";
+    }
+  }
+
+  /* ============================================================
+     RENDER: OVERALL SUMMARY
+     ============================================================ */
+  function renderOverallSummary(){
+    var totals = {
+      income: 0, expensesReserved: 0, rhbRequired: 0, maybankOtherSpending: 0,
+      maybankSpentEstimate: 0
+    };
+
+    MONTHS.forEach(function(m){
+      var calc = calcMonth(state.months[m.key]);
+      totals.income += calc.income;
+      totals.expensesReserved += calc.expensesReserved;
+      totals.rhbRequired += calc.rhbRequired;
+      totals.maybankOtherSpending += calc.maybankOtherSpending;
+      totals.maybankSpentEstimate += calc.maybankSpentEstimate;
+    });
+
+    document.getElementById("ovIncome").textContent = formatRM(totals.income);
+    document.getElementById("ovExpenses").textContent = formatRM(totals.expensesReserved);
+    document.getElementById("ovRhb").textContent = formatRM(totals.rhbRequired);
+    document.getElementById("ovMaybank").textContent = formatRM(totals.maybankOtherSpending);
+    document.getElementById("ovMaybankSpent").textContent = formatRM(totals.maybankSpentEstimate);
+  }
+
+  /* ============================================================
+     RENDER: TOTAL ACCOUNT BALANCES (final card)
+     For each account, as of the selected month:
+       1. the actual balance entered for this month, else
+       2. the latest actual balance entered in an earlier month, else
+       3. the balance worked out from this month's records — only where the
+          existing app already treats that as a balance (RHB "Baki RHB
+          Sepatutnya", ASNB/TNG/ShopeePay "Baki (ikut catatan)") and there is
+          at least one record; Maybank has no record-based balance, else
+       4. "not entered" — never silently counted as RM0.00.
+     Only account balances are summed, so income, transfers between
+     accounts and individual transactions are never double-counted.
+     ============================================================ */
+  var ACCOUNTS = [
+    { key: "rhb",     name: "RHB",              color: "var(--blue)",   balanceKey: "rhbCurrentBalance",     available: false },
+    { key: "asnb",    name: "ASNB",             color: "#7c3aed",       balanceKey: "asnbCurrentBalance",    available: false, entriesKey: "asnbEntries" },
+    { key: "tng",     name: "TNG Go+",          color: "#0891b2",       balanceKey: "tngCurrentBalance",     available: true,  entriesKey: "tngEntries" },
+    { key: "maybank", name: "Maybank",          color: "var(--teal)",   balanceKey: "maybankCurrentBalance", available: true },
+    { key: "sp",      name: "ShopeePay Money+", color: "var(--orange)", balanceKey: "spCurrentBalance",      available: true,  entriesKey: "spEntries" }
+  ];
+
+  function hasNumber(v){ return typeof v === "number" && !isNaN(v); }
+
+  function trackerNet(entries){
+    return entries.reduce(function(sum, x){
+      var amt = Number(x.amount);
+      if(isNaN(amt)) amt = 0;
+      return sum + (x.direction === "out" ? -amt : amt);
+    }, 0);
+  }
+
+  function resolveAccountBalance(acct){
+    var idx = MONTHS.findIndex(function(m){ return m.key === state.selectedMonth; });
+    for(var i = idx; i >= 0; i--){
+      var v = state.months[MONTHS[i].key][acct.balanceKey];
+      if(hasNumber(v)){
+        return {
+          value: v,
+          source: i === idx ? "Baki sebenar" : "Baki sebenar terkini · " + MONTHS[i].short
+        };
+      }
+    }
+
+    var monthData = state.months[state.selectedMonth];
+    if(acct.key === "rhb"){
+      if(monthData.expenses.length > 0 || monthData.rhbWithdrawals.length > 0){
+        return { value: calcMonth(monthData).computedRhbBalance, source: "Ikut catatan (Baki RHB Sepatutnya)" };
+      }
+    } else if(acct.entriesKey){
+      var entries = monthData[acct.entriesKey];
+      if(entries.length > 0){
+        return { value: trackerNet(entries), source: "Ikut catatan bulan ni" };
+      }
+    }
+    return null;
+  }
+
+  function renderAccountTotals(){
+    var list = document.getElementById("accountBalanceList");
+    if(!list) return;
+    var meta = MONTHS.find(function(m){ return m.key === state.selectedMonth; });
+    document.getElementById("totalsMonthLabel").textContent = meta ? meta.short : "";
+
+    var totalAll = 0, totalAvailable = 0;
+    var missingAll = [], missingAvailable = [];
+    list.innerHTML = "";
+
+    ACCOUNTS.forEach(function(acct){
+      var res = resolveAccountBalance(acct);
+      if(res){
+        totalAll += res.value;
+        if(acct.available) totalAvailable += res.value;
+      } else {
+        missingAll.push(acct.name);
+        if(acct.available) missingAvailable.push(acct.name);
+      }
+
+      var row = document.createElement("div");
+      row.className = "acct-row";
+
+      var nameEl = document.createElement("div");
+      nameEl.className = "acct-name";
+      var dot = document.createElement("span");
+      dot.className = "acct-dot";
+      dot.style.background = acct.color;
+      nameEl.appendChild(dot);
+      nameEl.appendChild(document.createTextNode(acct.name));
+      if(acct.available){
+        var badge = document.createElement("span");
+        badge.className = "acct-badge";
+        badge.textContent = "Available";
+        nameEl.appendChild(badge);
+      }
+
+      var right = document.createElement("div");
+      right.className = "acct-right";
+      var valEl = document.createElement("div");
+      valEl.className = "acct-value" + (res ? "" : " missing");
+      valEl.textContent = res ? formatRM(res.value) : "Belum dimasukkan";
+      right.appendChild(valEl);
+      if(res){
+        var srcEl = document.createElement("div");
+        srcEl.className = "acct-src";
+        srcEl.textContent = res.source;
+        right.appendChild(srcEl);
+      }
+
+      row.appendChild(nameEl);
+      row.appendChild(right);
+      list.appendChild(row);
+    });
+
+    document.getElementById("totalAllValue").textContent = formatRM(totalAll) + (missingAll.length ? " *" : "");
+    document.getElementById("totalAvailableValue").textContent = formatRM(totalAvailable) + (missingAvailable.length ? " *" : "");
+
+    var warn = document.getElementById("totalsWarning");
+    if(missingAll.length){
+      warn.style.display = "block";
+      warn.textContent = "* Total belum lengkap — baki untuk " + missingAll.join(", ") +
+        " belum dimasukkan, jadi tak dikira dalam total. Masukkan baki sebenar dalam section masing-masing.";
+    } else {
+      warn.style.display = "none";
+    }
+  }
+
+  /* ============================================================
+     RENDER: INPUT FIELDS (income / balances) — sync without losing focus
+     ============================================================ */
+  function renderInputs(){
+    var monthData = state.months[state.selectedMonth];
+    var incomeInput = document.getElementById("incomeInput");
+    var spBalanceInput = document.getElementById("spBalanceInput");
+    var rhbBalanceInput = document.getElementById("rhbBalanceInput");
+    var maybankBalanceInput = document.getElementById("maybankBalanceInput");
+    var asnbBalanceInput = document.getElementById("asnbBalanceInput");
+    var tngBalanceInput = document.getElementById("tngBalanceInput");
+
+    incomeInput.value = monthData.income === 0 ? "" : monthData.income;
+    spBalanceInput.value = (monthData.spCurrentBalance === null || monthData.spCurrentBalance === undefined) ? "" : monthData.spCurrentBalance;
+    rhbBalanceInput.value = (monthData.rhbCurrentBalance === null || monthData.rhbCurrentBalance === undefined) ? "" : monthData.rhbCurrentBalance;
+    maybankBalanceInput.value = (monthData.maybankCurrentBalance === null || monthData.maybankCurrentBalance === undefined) ? "" : monthData.maybankCurrentBalance;
+    asnbBalanceInput.value = (monthData.asnbCurrentBalance === null || monthData.asnbCurrentBalance === undefined) ? "" : monthData.asnbCurrentBalance;
+    tngBalanceInput.value = (monthData.tngCurrentBalance === null || monthData.tngCurrentBalance === undefined) ? "" : monthData.tngCurrentBalance;
+
+    renderNotes(monthData);
+  }
+
+  /* ============================================================
+     RENDER: NOTES / CATATAN
+     ============================================================ */
+  function renderNotes(monthData){
+    var meta = MONTHS.find(function(m){ return m.key === state.selectedMonth; });
+    var notesInput = document.getElementById("notesInput");
+    var notesCount = document.getElementById("notesCount");
+    var notesMonthLabel = document.getElementById("notesMonthLabel");
+
+    if(document.activeElement !== notesInput){
+      notesInput.value = monthData.notes || "";
+    }
+    notesMonthLabel.textContent = meta ? meta.short : "";
+    notesCount.textContent = (monthData.notes || "").length + " aksara";
+  }
+
+  /* ============================================================
+     RENDER ALL
+     ============================================================ */
+  function renderAll(){
+    renderMonthTabs();
+    renderInputs();
+    renderExpenseList(state.months[state.selectedMonth]);
+    renderRhbWithdrawalList(state.months[state.selectedMonth]);
+    renderExtraIncomeList(state.months[state.selectedMonth]);
+    renderTrackerList(state.months[state.selectedMonth], ASNB_OPTS);
+    renderTrackerList(state.months[state.selectedMonth], TNG_OPTS);
+    renderTrackerList(state.months[state.selectedMonth], SP_OPTS);
+    renderCalculations();
+  }
+
+  /* ============================================================
+     EVENT WIRING
+     ============================================================ */
+  function wireEvents(){
+    document.getElementById("incomeInput").addEventListener("input", function(e){
+      var val = parseFloat(e.target.value);
+      state.months[state.selectedMonth].income = isNaN(val) ? 0 : val;
+      saveState();
+      renderCalculations();
+    });
+
+    document.getElementById("rhbBalanceInput").addEventListener("input", function(e){
+      var val = parseFloat(e.target.value);
+      state.months[state.selectedMonth].rhbCurrentBalance = e.target.value === "" ? null : (isNaN(val) ? null : val);
+      saveState();
+      renderCalculations();
+    });
+
+    document.getElementById("maybankBalanceInput").addEventListener("input", function(e){
+      var val = parseFloat(e.target.value);
+      state.months[state.selectedMonth].maybankCurrentBalance = e.target.value === "" ? null : (isNaN(val) ? null : val);
+      saveState();
+      renderCalculations();
+    });
+
+    document.getElementById("asnbBalanceInput").addEventListener("input", function(e){
+      var val = parseFloat(e.target.value);
+      state.months[state.selectedMonth].asnbCurrentBalance = e.target.value === "" ? null : (isNaN(val) ? null : val);
+      saveState();
+      renderAccountTotals();
+    });
+
+    document.getElementById("tngBalanceInput").addEventListener("input", function(e){
+      var val = parseFloat(e.target.value);
+      state.months[state.selectedMonth].tngCurrentBalance = e.target.value === "" ? null : (isNaN(val) ? null : val);
+      saveState();
+      renderAccountTotals();
+    });
+
+    document.getElementById("spBalanceInput").addEventListener("input", function(e){
+      var val = parseFloat(e.target.value);
+      state.months[state.selectedMonth].spCurrentBalance = e.target.value === "" ? null : (isNaN(val) ? null : val);
+      saveState();
+      renderAccountTotals();
+    });
+
+    document.getElementById("notesInput").addEventListener("input", function(e){
+      var monthData = state.months[state.selectedMonth];
+      monthData.notes = e.target.value;
+      document.getElementById("notesCount").textContent = monthData.notes.length + " aksara";
+      saveState();
+    });
+
+    document.getElementById("notesClearBtn").addEventListener("click", function(){
+      var meta = MONTHS.find(function(m){ return m.key === state.selectedMonth; });
+      openModal(
+        "Kosongkan catatan?",
+        "Catatan untuk " + (meta ? meta.label : "bulan ini") + " akan dipadam. Bulan lain tidak terjejas.",
+        function(){
+          state.months[state.selectedMonth].notes = "";
+          saveState();
+          renderNotes(state.months[state.selectedMonth]);
+        }
+      );
+    });
+
+    document.getElementById("addExpenseBtn").addEventListener("click", function(){
+      var monthData = state.months[state.selectedMonth];
+      monthData.expenses.push({ id: "exp" + (expenseIdCounter++), name: "", amount: 0, paid: false });
+      saveState();
+      renderExpenseList(monthData);
+      renderCalculations();
+      // focus the new expense name field
+      var rows = document.querySelectorAll("#expenseList .expense-row input[type='text']");
+      if(rows.length) rows[rows.length - 1].focus();
+    });
+
+    document.getElementById("addRhbWithdrawalBtn").addEventListener("click", function(){
+      var monthData = state.months[state.selectedMonth];
+      monthData.rhbWithdrawals.push({ id: "wd" + (withdrawalIdCounter++), name: "", amount: 0, pocket: "expenses", direction: "out", linkedExpenseId: null });
+      saveState();
+      renderRhbWithdrawalList(monthData);
+      renderCalculations();
+      // focus the new entry's name field
+      var rows = document.querySelectorAll("#rhbWithdrawalList .withdrawal-row input[type='text']");
+      if(rows.length) rows[rows.length - 1].focus();
+    });
+
+    document.getElementById("autoLinkBtn").addEventListener("click", function(){
+      var monthData = state.months[state.selectedMonth];
+      var norm = function(s){ return String(s || "").trim().toLowerCase(); };
+      var linkedCount = 0;
+      var skippedAmbiguous = [];
+
+      monthData.rhbWithdrawals.forEach(function(w){
+        if(w.pocket !== "expenses" || w.linkedExpenseId) return; // only unlinked, expenses-pocket entries
+        var wName = norm(w.name);
+        if(!wName) return;
+
+        var matches = monthData.expenses.filter(function(e){
+          var eName = norm(e.name);
+          return eName && (eName === wName || eName.indexOf(wName) !== -1 || wName.indexOf(eName) !== -1);
+        });
+
+        if(matches.length === 1){
+          w.linkedExpenseId = matches[0].id;
+          linkedCount++;
+        } else if(matches.length > 1){
+          skippedAmbiguous.push(w.name);
+        }
+      });
+
+      saveState();
+      renderRhbWithdrawalList(monthData);
+      renderCalculations();
+
+      var msg = linkedCount > 0
+        ? linkedCount + " pergerakan berjaya di-link ikut nama yang sepadan dengan expense."
+        : "Tiada pergerakan baru yang sepadan untuk di-link. Semak nama entry vs nama expense.";
+      if(skippedAmbiguous.length > 0){
+        msg += " Ada " + skippedAmbiguous.length + " nama yang sepadan dengan lebih dari satu expense (link manual je untuk ni): " + skippedAmbiguous.join(", ") + ".";
+      }
+      openModal("Auto-link selesai", msg, function(){});
+      document.getElementById("modalConfirm").style.display = "none";
+      document.getElementById("modalCancel").textContent = "OK";
+    });
+
+    document.getElementById("addExtraIncomeBtn").addEventListener("click", function(){
+      var monthData = state.months[state.selectedMonth];
+      monthData.maybankExtraIncome.push({ id: "ext" + (extraIncomeIdCounter++), name: "", amount: 0 });
+      saveState();
+      renderExtraIncomeList(monthData);
+      renderCalculations();
+      // focus the new entry's name field
+      var rows = document.querySelectorAll("#extraIncomeList .expense-row input[type='text']");
+      if(rows.length) rows[rows.length - 1].focus();
+    });
+
+    document.getElementById("addAsnbBtn").addEventListener("click", function(){
+      var monthData = state.months[state.selectedMonth];
+      monthData.asnbEntries.push({ id: "asnb" + (asnbIdCounter++), name: "", amount: 0, direction: "in" });
+      saveState();
+      renderTrackerList(monthData, ASNB_OPTS);
+      var rows = document.querySelectorAll("#asnbList .withdrawal-row input[type='text']");
+      if(rows.length) rows[rows.length - 1].focus();
+    });
+
+    document.getElementById("addTngBtn").addEventListener("click", function(){
+      var monthData = state.months[state.selectedMonth];
+      monthData.tngEntries.push({ id: "tng" + (tngIdCounter++), name: "", amount: 0, direction: "in" });
+      saveState();
+      renderTrackerList(monthData, TNG_OPTS);
+      var rows = document.querySelectorAll("#tngList .withdrawal-row input[type='text']");
+      if(rows.length) rows[rows.length - 1].focus();
+    });
+
+    document.getElementById("addSpBtn").addEventListener("click", function(){
+      var monthData = state.months[state.selectedMonth];
+      monthData.spEntries.push({ id: "sp" + (spIdCounter++), name: "", amount: 0, direction: "in" });
+      saveState();
+      renderTrackerList(monthData, SP_OPTS);
+      var rows = document.querySelectorAll("#spList .withdrawal-row input[type='text']");
+      if(rows.length) rows[rows.length - 1].focus();
+    });
+
+    document.getElementById("overallToggle").addEventListener("click", function(){
+      var body = document.getElementById("overallBody");
+      var btn = document.getElementById("overallToggle");
+      body.classList.toggle("open");
+      btn.classList.toggle("open");
+    });
+
+    document.getElementById("resetMonthBtn").addEventListener("click", function(){
+      var meta = MONTHS.find(function(m){ return m.key === state.selectedMonth; });
+      openModal(
+        "Reset " + meta.label + "?",
+        "Are you sure you want to reset this month's data? Income, expenses, RHB movements, Maybank, notes, ASNB, TNG Go+, and ShopeePay Money+ for " + meta.label + " will be cleared. Other months are not affected.",
+        function(){
+          state.months[state.selectedMonth] = emptyMonth();
+          saveState();
+          renderAll();
+        }
+      );
+    });
+
+    document.getElementById("resetAllBtn").addEventListener("click", function(){
+      openModal(
+        "Reset ALL data?",
+        "This will permanently erase income, expenses, RHB movements, Maybank, notes, ASNB, TNG Go+, and ShopeePay Money+ data for every month from September 2026 to March 2027. This cannot be undone.",
+        function(){
+          state = defaultState();
+          expenseIdCounter = 1;
+          saveState();
+          renderAll();
+        }
+      );
+    });
+
+    document.getElementById("modalCancel").addEventListener("click", closeModal);
+    document.getElementById("modalOverlay").addEventListener("click", function(e){
+      if(e.target === document.getElementById("modalOverlay")) closeModal();
+    });
+    document.getElementById("modalConfirm").addEventListener("click", function(){
+      if(pendingResetAction) pendingResetAction();
+      closeModal();
+    });
+  }
+
+  /* ============================================================
+     MODAL HELPERS
+     ============================================================ */
+  function openModal(title, message, onConfirm){
+    document.getElementById("modalTitle").textContent = title;
+    document.getElementById("modalMessage").textContent = message;
+    pendingResetAction = onConfirm;
+    document.getElementById("modalOverlay").classList.add("show");
+  }
+  function closeModal(){
+    document.getElementById("modalOverlay").classList.remove("show");
+    document.getElementById("modalConfirm").style.display = "";
+    document.getElementById("modalCancel").textContent = "Cancel";
+    pendingResetAction = null;
+  }
+
+  /* ============================================================
+     INIT
+     ============================================================ */
+  function init(){
+    state = loadState();
+    wireEvents();
+    renderAll();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+
+</body>
+</html>
